@@ -4,8 +4,9 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;  
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const e = require('express');
 
-// require('dotenv').config();
+
 
 app.use(express.json());
 app.use(cors());
@@ -24,38 +25,50 @@ const client = new MongoClient(uri, {
 });
 
 
+
 async function run() {
     try {
         await client.connect();
         const db = client.db("bookHeaven");
         const booksCollection = db.collection("books");
-
+        const commentsCollection = db.collection("comments");
 
 
 
 
         // ALL Books
         app.get("/AllBooks" , async (req, res) => {
-            const cursor = booksCollection.find({});
-            const result = await cursor.toArray();
+            const result = await booksCollection.find({}).toArray();
             res.send(result);
         });
         
         
-        // get book data
+        //  add new books
         app.post("/AllBooks" , async (req, res) =>{
             const newBook = req.body;
             const result = await booksCollection.insertOne(newBook);
             res.send(result);
-        })
-        // Ger single book
+        });
+
+        // Get single book
         app.get("/BookDetails/:id" , async (req,res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await booksCollection.findOne(query)
             res.send(result);
         })
-        
+
+        // personal books of user
+        app.post("/mybooks", async (req, res) => {
+             const { userEmail } = req.body; 
+             console.log(userEmail);
+             if (!userEmail) {
+             return res.status(400).send({ error: "Email is required" });}
+             const filteredBooks = await booksCollection.find({ userEmail }).toArray();
+             res.send(filteredBooks);
+         });
+
+
     } finally{
 
     }
