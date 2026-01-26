@@ -61,7 +61,6 @@ async function run() {
         // personal books of user
         app.post("/mybooks", async (req, res) => {
              const { userEmail } = req.body; 
-             console.log(userEmail);
              if (!userEmail) {
              return res.status(400).send({ error: "Email is required" });}
              const filteredBooks = await booksCollection.find({ userEmail }).toArray();
@@ -71,9 +70,19 @@ async function run() {
         //  delete the book
         app.delete("/AllBooks/:id" , async (req, res) => {
             const id = req.params.id;
-            console.log(id);
             const query = { _id: new ObjectId(id) };
             const result = await booksCollection.deleteOne(query);
+            res.send(result);
+        })
+
+        // update book
+        app.put("/Update/:id" , async (req, res) => {
+            const id = req.params.id;
+            const updatedData = req.body;
+            const result = await booksCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: updatedData }
+            );
             res.send(result);
         })
 
