@@ -1,15 +1,54 @@
-const express = require('express');
+const express = require('express')
 require('dotenv').config();
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;  
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const e = require('express');
+const admin = require("firebase-admin");
 
 
+
+
+const serviceAccount = require("./firebaseAdminSDk.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
 app.use(express.json());
 app.use(cors());
+
+const UserVerification = async (req, res, next) => {
+    
+    if(!req.headers.authorization){
+        return res.status(401).send({ error: "Unauthorized access" });
+    }
+    const token = req.headers.authorization.split(" ")[1];
+    console.log(token);
+    if(!token){
+        return res.status(401).send({ error: "Unauthorized access" });
+    }
+    try {
+        await admin.auth().verifyIdToken(token);
+        next();
+    } catch (error) {
+        return res.status(401).send({ error: "Unauthorized access" });
+        
+    }
+    
+}
+ const verifyOwner = async (req, res , next) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const userData = await admin.auth().verifyIdToken(token);
+    const {userEmail} = req.body;
+    const tokenEmail = userData.email;
+    
+    if (userEmail !== tokenEmail){
+        res.status("403").send("Forbiden Access")
+    }else{
+        next()
+    }
+ }
 
 
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@crud.7q5wtjc.mongodb.net/?appName=CRUD`;
@@ -42,9 +81,9 @@ async function run() {
         
         
         //  add new books
-        app.post("/AllBooks" , async (req, res) =>{
+        app.post("/AllBooks" ,  async (req, res) =>{
             const newBook = req.body;
-            const result = await booksCollection.insertOne({newBook , createdAt: new Date()});
+            const result = await booksCollection.insertOne({ ...newBook , createdAt: new Date()});
             res.send(result);
         });
 
@@ -57,7 +96,7 @@ async function run() {
         })
 
         // personal books of user
-        app.post("/mybooks", async (req, res) => {
+        app.post("/mybooks", verifyOwner , async (req, res) => {
              const { userEmail } = req.body; 
              if (!userEmail) {
              return res.status(400).send({ error: "Email is required" });}
@@ -66,7 +105,7 @@ async function run() {
          });
 
         //  delete the book
-        app.delete("/AllBooks/:id" , async (req, res) => {
+        app.delete("/AllBooks/:id" , UserVerification , async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await booksCollection.deleteOne(query);
@@ -74,7 +113,7 @@ async function run() {
         })
 
         // update book
-        app.put("/Update/:id" , async (req, res) => {
+        app.put("/Update/:id" , UserVerification , async (req, res) => {
             const id = req.params.id;
             const updatedData = req.body;
             const result = await booksCollection.updateOne(
@@ -88,7 +127,7 @@ async function run() {
         app.post("/comments" , async (req, res) => {
             const { bookId, commentText, userEmail , userPhoto, userName} = req.body;
              const UserId = new ObjectId();
-            // console.log(req.body);
+            
 
             const existingDoc = await commentsCollection.findOne({ bookId });
             if (existingDoc) {
