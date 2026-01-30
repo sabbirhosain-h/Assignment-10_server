@@ -34,8 +34,6 @@ async function run() {
         const commentsCollection = db.collection("comments");
 
 
-
-
         // ALL Books
         app.get("/AllBooks" , async (req, res) => {
             const result = await booksCollection.find({}).toArray();
@@ -46,7 +44,7 @@ async function run() {
         //  add new books
         app.post("/AllBooks" , async (req, res) =>{
             const newBook = req.body;
-            const result = await booksCollection.insertOne(newBook);
+            const result = await booksCollection.insertOne({newBook , createdAt: new Date()});
             res.send(result);
         });
 
@@ -86,6 +84,51 @@ async function run() {
             res.send(result);
         })
 
+        // add comments
+        app.post("/comments" , async (req, res) => {
+            const { bookId, commentText, userEmail , userPhoto, userName} = req.body;
+             const UserId = new ObjectId();
+            // console.log(req.body);
+
+            const existingDoc = await commentsCollection.findOne({ bookId });
+            if (existingDoc) {
+                const result = await commentsCollection.updateOne(
+                    { bookId },
+                    { $push: { data : { userEmail, userPhoto, userName, commentText, UserId } } }
+                );
+                res.send(result);
+            }
+            else {
+                const result = await commentsCollection.insertOne({
+                    bookId,
+                    data: [ { userEmail, userPhoto, userName, commentText, UserId } ]
+                });
+                res.send(result);
+            }
+           
+        });
+
+        // get comments
+        app.get("/comments/:bookId" , async (req, res) => {
+            const bookId = req.params.bookId;
+            const query = { bookId: bookId };
+            const result = await commentsCollection.findOne(query);
+            res.send(result);
+        });
+
+        // delete comment
+        app.delete('/comments/:bookId/:userId', async (req, res) => {
+          const { bookId, userId } = req.params;
+
+          const result = await commentsCollection.updateOne(
+              { bookId },
+              {  $pull: {  data: { UserId: new ObjectId(userId) }  }}
+             );
+
+        res.send(result);
+       });
+
+
 
     } finally{
 
@@ -95,7 +138,4 @@ run().catch(console.dir);
 
 
 
-app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
-   
-});
+app.listen(port, () => {});
