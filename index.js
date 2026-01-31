@@ -48,7 +48,7 @@ const UserVerification = async (req, res, next) => {
     }else{
         next()
     }
- }
+ }  
 
 
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@crud.7q5wtjc.mongodb.net/?appName=CRUD`;
