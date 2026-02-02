@@ -1,3 +1,6 @@
 .env
 node_modules
 firebaseAdminSDk.json
+.vercel
+encode.js
+vercel.json

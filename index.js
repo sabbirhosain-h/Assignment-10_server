@@ -3,13 +3,14 @@ require('dotenv').config();
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;  
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const admin = require("firebase-admin");
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 
-
-const serviceAccount = require("./firebaseAdminSDk.json");
+// index.js
+const decoded = Buffer.from(process.env.FIREBASE_KEY, "base64").toString("utf8");
+const serviceAccount = JSON.parse(decoded);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -67,7 +68,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
         const db = client.db("bookHeaven");
         const booksCollection = db.collection("books");
         const commentsCollection = db.collection("comments");
@@ -170,7 +171,7 @@ async function run() {
 
 
     } finally{
-
+        
     }
 }
 run().catch(console.dir);
